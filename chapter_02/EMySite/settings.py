@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 """
 Django settings for EMySite project.
 
@@ -44,6 +45,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'blog',
     'pure_pagination',
+    'taggit',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -77,6 +79,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EMySite.wsgi.application'
 
+
+# 配置邮件发送服务器
+EMAIL_HOST = 'smtp.aliyun.com'
+EMAIL_PORT = '25'
+EMAIL_HOST_USER = 'luojingen@aliyun.com'
+EMAIL_HOST_PASSWORD = 'luo1380126'
+EMAIL_USE_TLS = False
+EMAIL_FROM = 'luojingen@aliyun.com'
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
