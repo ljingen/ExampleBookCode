@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
 from taggit.managers import TaggableManager
+
 # Create your models here.
 
 
@@ -48,7 +49,7 @@ class Post(models.Model):
         获取Post对象的url地址，利用reverse的反调功能
         :return: 
         """
-        print(self.publish.year)
+        print(self.publish.year,self.id)
         return reverse('blog:post_detail', args=[self.publish.year,
                                                  self.publish.strftime('%m'),
                                                  self.publish.strftime('%d'),

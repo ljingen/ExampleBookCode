@@ -1,7 +1,8 @@
-# -*- conding:utf-8 -*-
+# -*- coding:utf-8 -*-
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View, ListView, DetailView
 from django.core.mail import send_mail
+from django.db.models import Count
 
 from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
 from taggit.models import Tag
@@ -19,13 +20,17 @@ def post_list(request, tag_slug=None):
     chapter 02,增加了tag_slug这个参数
     """
     all_posts = Post.published.all()
-    _tag = None
-    # 查看是否船体了tag _slug标签过来
+    tag = None
+    # 查看是否传递了tag_slug标签过来
     if tag_slug:
-        _tag = get_object_or_404(Tag, slug=tag_slug)
-        all_posts = all_posts.filter(tags__in=[_tag])
+        print(tag_slug)
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        all_posts = all_posts.filter(tags__in=[tag])
+
+
 
     # 实现页面分页的选择
+
     try:
         page = request.GET.get('page', 1)
     except PageNotAnInteger:
@@ -33,11 +38,18 @@ def post_list(request, tag_slug=None):
 
     # Provide Paginator with the request object for complete querystring generation
 
-    paginator = Paginator(all_posts, 3, request=request)  # 获取一共有多少分页
+    paginator = Paginator(all_posts, 2, request=request)  # 获取一共有多少分页
 
-    all_post_page = paginator.page(page)  # 拿到指定的分页
+    all_post_page = paginator.page(page)  # 拿到指定的分页的数据
 
-    return render(request, 'blog/post/list.html', {'all_post_pages': all_post_page, '_tag': _tag})
+    # print(repr(all_post_page))
+    for post in all_post_page.object_list:
+        for tag in post.tags.all():
+            print(tag.slug)
+
+    return render(request, 'blog/post/list.html', {'page': page,
+                                                   'all_post_pages': all_post_page,
+                                                   'tag': tag})
 
 
 def post_detail(request, year, month, day, post):
@@ -70,10 +82,14 @@ def post_detail(request, year, month, day, post):
     else:
         comment_form = CommentForm()
 
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:4]
     return render(request, 'blog/post/detail.html', {'post': post,
                                                      'all_comments': all_comments,
                                                      'comment_form': comment_form,
-                                                     'new_comment': new_comment})
+                                                     'new_comment': new_comment,
+                                                     'similar_posts': similar_posts})
 
 
 class PostListView(View):
@@ -120,4 +136,4 @@ def post_share(request, post_id):
     return render(request, 'blog/post/share.html', {
         'post': post,
         'form': form,
-        'send_flag':send_flag})
+        'send_flag': send_flag})

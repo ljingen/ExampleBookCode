@@ -1,3 +1,4 @@
+{% load blog_tags %}
 {% load staticfiles %}
 <!DOCTYPE html>
 <html lang="en">
@@ -14,7 +15,7 @@
     </div>
     <div id="sidebar">
         <h2>我的博客</h2>
-        <p>This is My blog.</p>
+        <p>This is My blog. I've written<b style="font-size: 28px; color: #953b39"> {% total_post %}</b> posts so far. </p>
     </div>
 </body>
 </html>
