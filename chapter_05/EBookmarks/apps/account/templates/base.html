@@ -1,0 +1,67 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}FaceBook{% endblock %}</title>
+    <link href="{% static 'css/base.css' %}" rel="stylesheet">
+    {% block custom_css %}{% endblock %}
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.0.min.js" type="text/javascript"></script>
+    {% block custom_js %}{% endblock %}
+    <script src=" http://cdn.jsdelivr.net/jquery.cookie/1.4.1/jquery.cookie.min.js "></script>
+    <script>
+        var csrftoken = $.cookie('csrftoken');
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+        $(document).ready(function(){
+            {% block domready %}
+            {% endblock %}
+		});
+    </script>
+</head>
+<body>
+    <!--这个是一个头部文件-->
+    <div id="header">
+        <span class="logo">FaceBooks-BookMarks</span>
+        {% if request.user.is_authenticated %}
+            <ul class="menu">
+                <li {% if section == 'dashboard' %} class="selected"{% endif %}><a href="{% url 'accounts:dashboard' %}">My Dashboard</a></li>
+                <li {% if section == 'images' %} class="selected"{% endif %}><a href="{% url 'images:list' %}">Images</a></li>
+                <li {% if section == 'people' %} class="selected"{% endif %}><a href="#">People</a></li>
+                <li {% if section == 'work' %} class="selected"{% endif %}><a href="#">Work</a></li>
+            </ul>
+        {% endif %}
+        <span class="user">
+            {% if request.user.is_authenticated %}
+            Hello, <b style="color:red">{{ request.user.email }}</b>
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+            {% else %}
+                <a href="{% url 'accounts:login' %}">Log-In</a>
+            {% endif %}
+        </span>
+    </div>
+    {% if messages %}
+        <ul class="messages">
+        {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message|safe }}<a href="#" class="close"></a></li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    <!--这个是一个中部文件-->
+    <div id="content">
+        {% block content %}
+            测试的正文区域
+        {% endblock %}
+    </div>
+</body>
+</html>

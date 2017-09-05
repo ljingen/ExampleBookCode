@@ -1,0 +1,20 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}罗凌峰{% endblock %}</title>
+    <link href="{% static 'css/blog.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+        {% block content %}
+
+        {% endblock %}
+    </div>
+    <div id="sidebar">
+        <h2>我的博客</h2>
+        <p>This is My blog.</p>
+    </div>
+</body>
+</html>
