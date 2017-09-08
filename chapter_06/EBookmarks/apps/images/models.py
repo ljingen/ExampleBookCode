@@ -23,6 +23,8 @@ class Image(models.Model):
     user_like = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='images_liked', blank=True,
                                        verbose_name=u'喜欢')
 
+    total_likes = models.PositiveIntegerField(db_index=True, default=0, verbose_name=u'Total Likes')
+
     class Meta:
         verbose_name = u'图片信息'
         verbose_name_plural = verbose_name
@@ -35,7 +37,7 @@ class Image(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
-            super(Image, self).save(*args, **kwargs)
+        super(Image, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse('images:detail', args=(self.id, self.slug))

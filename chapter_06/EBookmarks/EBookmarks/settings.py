@@ -57,13 +57,14 @@ INSTALLED_APPS = (
     'account',
     'django.contrib.admin',
     'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'django.contrib.contenttypes',  # 内容管理框架，能够跟踪项目中所有model并提供和model交互的通用接口
     'django.contrib.sessions',
-    'django.contrib.messages',  # 用户消息框架
+    'django.contrib.messages',  # 消息框架
     'django.contrib.staticfiles',
     'images',
     'sorl.thumbnail',
     'pure_pagination',
+    'actions',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -136,7 +137,7 @@ USE_I18N = True
 USE_L10N = True
 
 # USE_TZ = True
-# 不使用全球时间，使用本
+# 不使用全球时间，使用本地时间支持
 USE_TZ = False
 
 

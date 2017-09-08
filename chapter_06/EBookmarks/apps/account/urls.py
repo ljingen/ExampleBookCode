@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from django.conf.urls import url
-from .views import LoginView, dashboard, RegisterView, UserProfileEditView, UseListView, UseDetailView, user_follow
+from .views import LoginView, dashboard, RegisterView, UserProfileEditView, UseListView, UseDetailView, UserFollowView
+from .views import user_follow
 
 urlpatterns = [
     # The user login views
@@ -27,7 +28,9 @@ urlpatterns = [
     url(r'edit/$', UserProfileEditView.as_view(), name='edit'),
     # url(r'edit/$', edit, name='edit'),
     # 用户进行关注/取消关注  user follow user ,这个最好放到 user_detail的签名 因为他和user_detail一样
+    # url(r'user/follow/$', UserFollowView.as_view(), name='user_follow'),
     url(r'user/follow/$', user_follow, name='user_follow'),
+
     # 查看用户列表和属性 userlist userprofile
     url(r'^user/$', UseListView.as_view(), name='user_list'),
     url(r'^user/(?P<username>[-\w]+)/$', UseDetailView.as_view(), name='user_detail'),

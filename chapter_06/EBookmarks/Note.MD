@@ -231,8 +231,26 @@ Chapter6 -----创建用户粉丝系统和用户广播系统继承redis
                     {% endif %}
                 </a>
         +++++++ 创建AJAX类型的view去支持用户的关注/取消关注操作
-
-
+                step0. 设计数据库表 Contact(models.Model),有3个字段，user1,user2,created
+                step1. 第一步先编写一个url,这个url是用户关注/去关注的url； url(r'^user/like/$', UserLikeView.as_view(), name='user_follow')
+                step2. 在view里面定义视图, UserLikeView(), 先取出来 要关注的用户id和具体的动作(like/unlike),如果这个值都有，那么开始验证行为
+                       如果是like,那么就到数据库表里面填写一条记录，如果是unlike，就到数据库表删除一条记录
+                step3. 设计template，定义一个连接，连接有id和action，点击后可以被ajax动态设置
+                               <a href="#", data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un{% endif %}follow" class="follow button">
+                                    {% if request.user not in user.followers.all %}
+                                        Follow
+                                    {% else %}
+                                        Unfollow
+                                    {% endif %}
+                                </a>
+                step4.关键设计jquery脚本，先初始化，然后制造一个post，里面有url、data、回调函数等
+        +++++++ 如何实现一个Model的用户关注同一个model的用户？
+                # Add following field to User dynamically 自己表用户关注自己表用户，这句话很关键
+                User.add_to_class('following',
+                              models.ManyToManyField('self',
+                                                     through=Contact,
+                                                     related_name='followers',
+                                                     symmetrical=False))
 
         +++++++ 一个典型的JQuery的使用方式
                 step1. 创建jquery的准备环境
@@ -263,5 +281,86 @@ Chapter6 -----创建用户粉丝系统和用户广播系统继承redis
                         )
                     });
                 });
-        +++++++
+        +++++++ 为什么在查询时候,两个句子执行结果完全不同？
+                if action == 'follow':
+                    # Contact.objects.get_or_create(user_from=request.user, user_to=user)
+                    con = Contact.objects.get_or_create(user_form=request.user, user_to=user)
+                else:
+                    Contact.objects.filter(user_from=request.user, user_to=user).delete()
 
+                return JsonResponse({'status': 'ok'})
+
+                这个查找到了原因，因为在Contact里面定义的字段是 user_form，但是这里面是user_from，一个是from，
+                一个是form，所以导致根本查不到结果;
+        +++++++ContentTypes是干嘛用?
+            'django.contrib.contenttypes',  # 内容管理框架，能够跟踪项目中所有model并提供和model交互的通用接口
+            使用起来和 auth或者admin一样 from django.contrib.contenttypes
+            Django 包含一个contenttypes 应用，它可以追踪安装在你的Django 项目里的所有应用，并提供一个高层次的、
+            通用的接口用于与你的模型进行交互
+        ++++++++ 设计一个Feed流系统的步骤
+                step1. 设计数据库,里面需要有user,feeds类型,创建时间
+                step2. 设计一个生成feeds的方法，这里面需要注意，需要在1分钟内避免多次添加;
+                step3. 到具体的事物方法内，当事物完成，添加生成feeds的方法
+                step4. 在一个页面，进行集中展示
+
+        ++++++ 了解prefetch_related和select_related这两个方法的不同
+               ?
+
+        ++++++Django 的value/value_list/flat 有什么作用?
+              step1. 定义一个model
+              class Building(models.Model):
+                    corporation = models.ForeignKey('company.Corporation', verbose_name=u'学校',related_name='buildings')
+                    number = models.CharField(u'楼栋编号',max_length=10, unique = True, db_index=True)
+                    create_time = models.DateTimeField(u'创建时间',auto_now_add=True)
+                    获取building的number字段列表
+                    In [1]: from apps.dormitory.models import Building
+
+                    In [2]: buildings = Building.objects.values('number')
+
+                    In [3]: buildings
+                    Out[3]: [{'number': u'1'}, {'number': u'2'}, {'number': u'3'}, {'number': u'4'}, {'number': u'5'}]
+
+                    In [4]: buildings_ = Building.objects.values_list('number')
+
+                    In [5]: buildings_
+                    Out[5]: [(u'1',), (u'2',), (u'3',), (u'4',), (u'5',)]
+
+                    In [6]: buildings_list = Building.objects.values_list('number', flat=True)
+
+                    In [7]: buildings_list
+                    Out[7]: [u'1', u'2', u'3', u'4', u'5']
+                    从以上代码可以看出:
+
+                    values方法可以获取number字段的字典列表。
+
+                    values_list可以获取number的元组列表。
+
+                    values_list方法加个参数flat=True可以获取number的值列表。
+
+        +++++++ Django 的Signals
+                 signals在  django.db.models.signals
+                 1.pre_save() and post_save() ,send before or after calling the save() method of models
+                 2.pre_delete() and post_delete() ,sent before or after calling the delete()method of models or
+                   querySet()
+                 3.m2m_changed: Sent when a ManyToManyField on a model is changed
+
+
+
+        +++++++ 如何使用Django的信号机制
+                step1. 在django中提供几种内置的信号源，分别为pre_save()\post_save()\pre_delete()\post_delete()\m2m_change
+                step2. 定义一个receiver信号接收器，例如：
+                    @receiver(m2m_changed, sender=Image.user_like.throut)
+                step3. 在app里面定义apps.py，并导入信号模块， 例如：
+                        from django.apps import AppConfig
+                        class ImagesConfig(AppConfig):
+                            name = 'images'
+                            verbose_name = 'Image bookmarks'
+                            def ready(self):
+                               # import signal handlers
+                               import images.signals
+                step4. 在app的init.py里面告诉Django加载我们app的那个应用配置
+                        default_app_config = 'images.apps.ImagesConfig'
+
+        +++++++ 如何安装、使用Reis?
+
+Chapter7 -----建立一个在线商店系统

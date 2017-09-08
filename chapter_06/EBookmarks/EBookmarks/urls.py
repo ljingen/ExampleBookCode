@@ -28,6 +28,8 @@ urlpatterns = [
     url(r'^account/', include('account.urls', namespace='accounts')),
     url(r'^media/(?P<path>.*)/$', serve, {'document_root': MEDIA_ROOT}),
     url(r'^images/', include('images.urls',namespace='images')),
+    url(r'^actions/', include('actions.urls', namespace='actions')),
+
 ]
 
 if settings.DEBUG:

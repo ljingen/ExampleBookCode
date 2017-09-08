@@ -6,16 +6,16 @@ from django.views.decorators.http import require_POST
 from django.views.generic.base import View
 from django.contrib import messages
 from django.core.paginator import Paginator,EmptyPage,PageNotAnInteger
-
 #from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
+
+from common.decorators import ajax_required
 
 from .forms import ImageCreateForm
 from .models import Image
-from common.decorators import ajax_required
+from actions.utils import create_action
+
 
 # Create your views here.
-
-
 class ImageCreateView(View):
     """
     View for creating an Image using the JavaScript Bookmarklet.
@@ -28,8 +28,8 @@ class ImageCreateView(View):
         else:
             form = ImageCreateForm(data=request.GET)
             return render(request, 'image/create.html', {'section': 'images',
-                                                            'form': form})
-    # form is sent
+                                                         'form': form})
+
     def post(self, request):
         form = ImageCreateForm(data=request.POST)
         if form.is_valid():
@@ -40,6 +40,8 @@ class ImageCreateView(View):
             new_item.user = request.user
 
             new_item.save()
+            # 调用create_action()添加一条feeds流到数据库里面
+            create_action(request.user, 'bookmarked image', new_item)
             messages.success(request, 'Image added successfully')
             # redirect to new created item detail view 重定向到一个新的创建项目详情页面
             return redirect(new_item.get_absolute_url())
@@ -55,8 +57,11 @@ class ImageDetailView(View):
     def get(self, request, id, slug):
         image = get_object_or_404(Image, id=id, slug=slug)
 
+        images_by_popularity = Image.objects.order_by('-total_likes')
+
         return render(request, 'image/detail.html', {'section': 'images',
-                                                    'image': image})
+                                                     'image': image,
+                                                     'images_by_popularity': images_by_popularity})
 
 
 class ImageDetailViewB(View):
@@ -82,8 +87,10 @@ def image_like(request):
             """从数据库获取所有图片"""
             image = Image.objects.get(id=int(image_id))
 
-            if action =='like':
+            if action == 'like':
                 image.user_like.add(request.user)
+                # 生成一条feeds流消息
+                create_action(request.user, 'likes', image)
             else:
                 image.user_like.remove(request.user)
             return JsonResponse({'status': 'ok'})

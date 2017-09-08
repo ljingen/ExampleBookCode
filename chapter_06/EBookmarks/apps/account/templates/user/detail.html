@@ -15,8 +15,7 @@
         follower{{ count|pluralize }}
         </span>
         <!--显示用户是收藏还是取消收藏的按钮-->
-        <a href="#", data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un
-        {% endif %}follow" class="follow button">
+        <a href="#", data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un{% endif %}follow" class="follow button">
             {% if request.user not in user.followers.all %}
                 Follow
             {% else %}
@@ -43,36 +42,39 @@
             {% endfor %}
         </div>
 {% endblock %}
+
+
 {% block domready %}
-    $('a.follow').click(function(e){
-        e.preventDefault();
-        $.post(
-            // post的url参数
-            '{% url 'accounts:user_follow' %}',
-            // post的 data数据
-            {
-                id:$(this).data('id'),
-                action:$(this).data('action')
-            },
-            // post的回调函数
-            function(data){
-                //如果返回的status == ok，代表处理正确
-                if(data['status']=='ok'){
-                    var previous_action = $('a.follow').data('action');
+     $('a.follow').click(function(e){
+       e.preventDefault();
+       $.post('{% url "accounts:user_follow" %}',
+        // post的 data数据
+        {
+           id: $(this).data('id'),
+           action: $(this).data('action')
+         },
+         // post的回调函数
 
-                    //toggle data-action
-                    $('a.follow').data('action', previous_action ='follow' ? 'unfollow' : 'follow');
-                    //toggle link text
-                    $('a.follow').text( previous_action == 'follow' ? 'Unfollow' : 'Follow');
-
-                    // update total followers
-                    var previous_followers = parseInt($('span.count .total').text());
-                    $('span.count .total').text(previous_action =='follow' ? previous_followers+1 : previous_followers-1);
-                }
-                //如果状态是 ko
-                else {
-                    alert('处理错误了,返回了错误信息!')
-                }
-            });
-    });
+         function(data){
+           if (data['status'] == 'ok') {
+             //如果返回的status == ok，代表处理正确
+             //var previous_action = $('a .follow').data('action'); //错误的版本
+             var previous_action = $('a.follow').data('action');  //取出上一次的事物
+             // toggle data-action 切换data-action数据
+             //$('a .follow').data('action', previous_action ='follow'?'unfollow':'follow'); //错误的版本
+             $('a.follow').data('action',previous_action == 'follow' ? 'unfollow' : 'follow'); //切换data-action数据
+             // toggle link text 切换链接上面的文字
+             //$('a .follow').text(previous_action == 'follow' ? 'Unfollow' : 'Follow'); //错误的版本
+             $('a.follow').text(previous_action == 'follow' ? 'Unfollow' : 'Follow');  //切换链接上面的文字
+             // update total followers 更新总计的关注者数量
+             var previous_followers = parseInt($('span.count .total').text());
+             $('span.count .total').text(previous_action == 'follow' ?previous_followers + 1 : previous_followers - 1);
+            alert('我是正确处理后的结果')
+            }
+           //如果状态是 ko
+            else {
+                alert('处理错误了,返回了错误信息!')
+            }
+        });
+     });
 {% endblock %}

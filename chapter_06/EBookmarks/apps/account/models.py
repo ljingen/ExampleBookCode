@@ -3,6 +3,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
+
 # Create your models here.
 
 
@@ -23,8 +24,13 @@ class Profile(models.Model):
 
 
 class Contact(models.Model):
-    user_form = models.ForeignKey(User, related_name='rel_from_set', verbose_name=u'关注者')
-    user_to = models.ForeignKey(User, related_name='rel_to_set', verbose_name=u'被关注者')
+    """
+    关注表
+    """
+    user_from = models.ForeignKey(User, related_name='rel_from_set', verbose_name=u'关注')
+
+    user_to = models.ForeignKey(User, related_name='rel_to_set', verbose_name=u'被关注')
+
     created = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=u'时间')
 
     class Meta:
@@ -33,10 +39,11 @@ class Contact(models.Model):
         ordering = ('-created', )
 
     def __str__(self):
-        return '{} 关注了 follows the {}'.format(self.user_form, self.user_to)
+        return '{} follows {}'.format(self.user_from,
+                                      self.user_to)
 
 
-# Add following field to User dynamically
+# Add following field to User dynamically 自己表用户关注自己表用户，这句话很关键
 User.add_to_class('following',
                   models.ManyToManyField('self',
                                          through=Contact,

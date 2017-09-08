@@ -10,9 +10,15 @@ from django.views.decorators.http import require_POST
 from django.views.generic.base import View
 
 from common.decorators import ajax_required
+
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile, Contact
+
 from images.models import Image
+
+from actions.models import Action
+from actions.utils import create_action
+
 
 # Create your views here.
 
@@ -54,9 +60,20 @@ def dashboard(request):
     '''
     # count = request.user.images_created.count
     count = Image.objects.filter(user=request.user).count()
+    # Display all actions by default
+    actions = Action.objects.exclude(user=request.user)  # 从数据库取出所有非当前用户的 feed流信息
+    # 这句我一点不懂
+    following_ids = request.user.following.values_list('id', flat=True)  # 获取当前用户关注的所有用户id列表
+
+    if following_ids:
+        actions = actions.filter(user_id__in=following_ids).select_related('user', 'user__profile').\
+             prefetch_related('target')  # 从所有的feed流中过滤出来当前用户关注的用户产生的feed流
+
+    actions = actions[:10]
 
     return render(request, 'account/dashboard.html', {'section': 'dashboard',
-                                                      'count': count})
+                                                      'count': count,
+                                                      'actions': actions})
 
 
 class RegisterView(View):
@@ -79,6 +96,8 @@ class RegisterView(View):
             new_user.save()
             # create the user profile 添加用户属性
             profile = Profile.objects.create(user=new_user)
+            # 用户注册成功，添加一条注册用户feeds流
+            create_action(new_user, 'has created an account')
             return render(request, 'account/register_done.html', {'new_user': new_user})
         else:
             return render(request, 'account/register.html', {'user_form': user_form})
@@ -146,54 +165,47 @@ class UseDetailView(View):
                                                     'count': count})
 
 
-# class UserFollowView(View):
-#     """
-#     用户关注视图，用户关注/取消关注。
-#     只有post数据
-#     通过ajax进行提交
-#     登录用户才可提交
-#     """
-#     def get(self):
-#         pass
-#
-#     def post(self, request):
-#         user_id = request.POST.get('id')
-#         action = request.POST.get('action')
-#
-#         if user_id and action:
-#             try:
-#                 user = User.objects.get(id=user_id)
-#                 if action == 'follow':
-#                     Contact.objects.get_or_create(user_from=request.user,
-#                                                   user_to=user)
-#                 else:
-#                     Contact.objects.filter(user_from=request.user,
-#                                            user_to=user).delete()
-#                 return JsonResponse({'status': 'ok'})
-#             except User.DoesNotExist:
-#                 return JsonResponse({'status': 'ko'})
-#         return JsonResponse({'status': 'ko'})
+class UserFollowView(View):
+    """
+    用户关注视图，用户关注/取消关注。
+    只有post数据
+    通过ajax进行提交
+    登录用户才可提交
+    """
+    def post(self, request):
+        user_id = request.POST.get('id')
+        action = request.POST.get('action')
+        if user_id and action:
+            try:
+                user = User.objects.get(id=user_id)
+                if action == 'follow':
+                    Contact.objects.get_or_create(user_form=request.user.id, user_to=user.id)
+                else:
+                    Contact.objects.get(user_from=request.user.id, user_to=user.id).delete()
+                    con = Contact.objects.filter(user_from=request.user.id, user_to=user.id)
+                return JsonResponse({'status': 'ok'})
 
-@ajax_required
+            except User.DoesNotExist:
+                return JsonResponse({'status': 'ko'})
+        return JsonResponse({'status': 'ko'})
+
+
 @require_POST
 @login_required
 def user_follow(request):
-   user_id = request.POST.get('id')  # 将被关注的用户
-   action = request.POST.get('action')  # 用户关注的动作，有 follow和unfollow
+    user_id = request.POST.get('id')
+    action = request.POST.get('action')
+    if user_id and action:
+        try:
+            user = User.objects.get(id=user_id)
+            if action == 'follow':
+                con = Contact.objects.get_or_create(user_from=request.user, user_to=user)
+                # 关注某人,产生一条feeds流
+                create_action(request.user, 'is following', user)
+            else:
+                Contact.objects.filter(user_from=request.user, user_to=user).delete()
+            return JsonResponse({'status': 'ok'})
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'ko'})
+    return JsonResponse({'status': 'ko'})
 
-   """
-    Contact  {user_from(User类型): 关注人   user_to（User类型）:被关注人，create:创建时间}
-   """
-   if user_id and action:
-       login_user = request.user
-       try:
-           user = User.objects.get(id=user_id)
-           if action == 'follow':
-               Contact.objects.create(user_from=login_user, user_to=user)
-           else:
-               Contact.objects.filter(user_from=login_user,
-                                      user_to=user).delete()
-           return JsonResponse({'status': 'ok'})
-       except User.DoesNotExist:
-           return JsonResponse({'status': 'ko'})
-   return JsonResponse({'status': 'ko'})
