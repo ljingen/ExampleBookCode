@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}Edit your account修改资料{% endblock %}
+{% block content %}
+    <h1>Edit you account</h1>
+    <p>you can edit your account using the following form:</p>
+    <form action="." method="post", enctype="multipart/form-data">
+        {{ user_form.as_p }}
+        {{ profile_form.as_p }}
+        {% csrf_token %}
+        <p><input type="submit" value="Save changes"></p>
+    </form>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    <h1>Dashboard</h1>
+    {% if request.user.is_authenticated %}
+        <p>欢迎你,{{ request.user.username }}</p>
+    {% endif %}
+    {% comment %}
+    {% with total_images_created=request.user.images_created.count %}
+        Welcome to your dashboard. You have bookmarked {{ total_images_created }} image{{ total_images_created|pluralize }}.
+    {% endwith %}
+    {% endcomment %}
+
+    <p>Welcome to your dashboard. You have bookmarked {{ count }} images</p>
+
+    <p>Drag the following button to you bookmarks toolbar to Bookmark images from other websites.->
+    <a href="javascript:{% include 'bookmarklet_launcher.js' %}" class="button">Bookmark It!</a></p>
+    You can <a href="{% url "accounts:edit" %}">edit your profile</a>
+    or <a href="{% url "accounts:password_change" %}">change your password</a>.</p>
+
+    <h2>What's happening</h2>
+    <div id="action-list">
+        {% for action in actions %}
+            {% include "action/detail.html" %}
+        {% endfor %}
+    </div>
+{% endblock %}
